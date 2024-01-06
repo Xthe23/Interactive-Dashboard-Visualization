@@ -95,6 +95,9 @@ function optionChanged(selectedOption) {
 
     if (selectedSample) {
       console.log("Sample data:", selectedSample);
+
+      // Call createBarChart function
+      createBarChart(selectedSample);
     } else {
       console.log("Sample data not found for ID:", selectedOptionNumber);
     }
@@ -103,10 +106,43 @@ function optionChanged(selectedOption) {
   }
 }
 
-// A) TODO: Create a horizontal bar chart which displays the top 10 OTUs found in that individual.
-// A.1) Use sample_values as the values for the bar chart.
-// A.2) Use otu_ids as the labels for the bar chart.
-// A.3) Use otu_labels as the hovertext for the chart.
+function createBarChart(sample) {
+  // Sort the sample values in descending order
+  let sortedValues = sample.sample_values.slice(0, 10).reverse();
+
+  // Sort the OTU IDs accordingly
+  let sortedIds = sample.otu_ids.slice(0, 10).reverse();
+
+  // Sort the OTU labels accordingly
+  let sortedLabels = sample.otu_labels.slice(0, 10).reverse();
+
+  // Create the trace for the bar chart
+  let trace = {
+    x: sortedValues,
+    y: sortedIds.map((id) => `OTU ${id}`),
+    text: sortedLabels.map((label) => {
+      // Split the label by semicolon
+      const [domain, phylum, classVal, order, family, genus] = label.split(";");
+      // Return the label in the desired format
+      return `Domain: ${domain}<br>Phylum: ${phylum}<br>Class: ${classVal}<br>Order: ${order}<br>Family: ${family}<br>Genus: ${genus}`;
+    }),
+    type: "bar",
+    orientation: "h",
+  };
+
+  // Create the data array
+  let data = [trace];
+
+  // Create the layout for the bar chart
+  let layout = {
+    title: "Top 10 OTUs",
+    xaxis: { title: "Sample Values" },
+    yaxis: { title: "OTU IDs" },
+  };
+
+  // Plot the bar chart
+  Plotly.newPlot("bar", data, layout);
+}
 
 // B) TODO: Create a bubble chart that displays each sample.
 // B.1) Use otu_ids for the x values.
