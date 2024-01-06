@@ -1,4 +1,9 @@
 let globalData = null; // Global variable to store the data
+
+// Global variables to store the current displayed sample and metadata
+let currentSample = null;
+let currentMetadata = null;
+
 /*
 Function to fetch data and store it in a global variable. Called at page load.
 
@@ -77,35 +82,63 @@ function optionChanged(selectedOption) {
   // Convert the selectedOption to a number
   let selectedOptionNumber = Number(selectedOption);
 
-  // Find the metadata for the selected option
-  let selectedMetadata = findMetadataById(
-    selectedOptionNumber,
-    globalData.metadata
-  );
+  // Store the current sample and metadata
+  currentMetadata = findMetadataById(selectedOptionNumber, globalData.metadata);
+  currentSample = findSampleById(selectedOptionNumber, globalData.samples);
 
-  if (selectedMetadata) {
+  if (currentMetadata) {
     // Display the metadata on the web page
-    iterateMetadata(selectedMetadata);
+    iterateMetadata(currentMetadata);
 
-    // Find the sample data for the selected option
-    let selectedSample = findSampleById(
-      selectedOptionNumber,
-      globalData.samples
-    );
-
-    if (selectedSample) {
-      console.log("Sample data:", selectedSample);
+    if (currentSample) {
+      // console.log("Sample data:", selectedSample);
 
       // Call createBarChart function
-      createBarChart(selectedSample);
+      createBarChart(currentSample);
+      // Call createBubbleChart function
+      createBubbleChart(currentSample);
+      // Call createWeeklyWashingFrequencyGaugeChart function
+      createWeeklyWashingFrequencyGaugeChart(currentMetadata);
     } else {
       console.log("Sample data not found for ID:", selectedOptionNumber);
     }
   } else {
     console.log("Metadata not found for ID:", selectedOptionNumber);
   }
+  // Redraw charts with the new data
+  redrawCharts(); // Call the redrawCharts function instead of redrawing here
 }
 
+// Function to redraw all charts based on the current sample and metadata
+function redrawCharts() {
+  // Make sure to clear or overwrite existing charts before redrawing
+  if (currentSample && currentMetadata) {
+    createBarChart(currentSample);
+    createBubbleChart(currentSample);
+    createWeeklyWashingFrequencyGaugeChart(currentMetadata);
+  }
+}
+
+// Event listener for window resize
+window.addEventListener("resize", redrawCharts);
+
+// Helper function to format the labels
+function formatLabel(label) {
+  // Split the label by semicolon
+  const [domain, phylum, classVal, order, family, genus] = label.split(";");
+  // Replace undefined values with "Unknown"
+  const formattedLabel = [
+    domain || "Unknown",
+    phylum || "Unknown",
+    classVal || "Unknown",
+    order || "Unknown",
+    family || "Unknown",
+    genus || "Unknown",
+  ];
+  // Return the label in the desired format
+  return `Domain: ${formattedLabel[0]}<br>Phylum: ${formattedLabel[1]}<br>Class: ${formattedLabel[2]}<br>Order: ${formattedLabel[3]}<br>Family: ${formattedLabel[4]}<br>Genus: ${formattedLabel[5]}`;
+}
+// Creates a bar chart that displays the top 10 OTUs found in that individual.
 function createBarChart(sample) {
   // Sort the sample values in descending order
   let sortedValues = sample.sample_values.slice(0, 10).reverse();
@@ -120,12 +153,7 @@ function createBarChart(sample) {
   let trace = {
     x: sortedValues,
     y: sortedIds.map((id) => `OTU ${id}`),
-    text: sortedLabels.map((label) => {
-      // Split the label by semicolon
-      const [domain, phylum, classVal, order, family, genus] = label.split(";");
-      // Return the label in the desired format
-      return `Domain: ${domain}<br>Phylum: ${phylum}<br>Class: ${classVal}<br>Order: ${order}<br>Family: ${family}<br>Genus: ${genus}`;
-    }),
+    text: sortedLabels.map(formatLabel),
     type: "bar",
     orientation: "h",
   };
@@ -144,17 +172,155 @@ function createBarChart(sample) {
   Plotly.newPlot("bar", data, layout);
 }
 
-// B) TODO: Create a bubble chart that displays each sample.
-// B.1) Use otu_ids for the x values.
-// B.2) Use sample_values for the y values.
-// B.3) Use sample_values for the marker size.
-// B.4) Use otu_ids for the marker colors.
-// B.5) Use otu_labels for the text values.
+// Creates a bubble chart that displays each sample of OTUs.
+function createBubbleChart(sample) {
+  // Create the trace for the bubble chart
+  let trace = {
+    x: sample.otu_ids,
+    y: sample.sample_values,
+    text: sample.otu_labels.map(formatLabel),
+    mode: "markers",
+    marker: {
+      size: sample.sample_values,
+      color: sample.otu_ids,
+      colorscale: "Earth",
+    },
+  };
 
-// C) TODO: Both the bubble chart and the bar chart should update each time a new sample is selected.
+  // Create the data array
+  let data = [trace];
 
-// D) BONUS* TODO: Create a gauge chart to plot the weekly washing frequency of the individual.
-// *Note: Use this as a reference for the gauge chart: https://plot.ly/javascript/gauge-charts/
+  // Adjust the layout for the bubble chart to fit in the card container
+  let layout = {
+    title: "Sample Distribution",
+    xaxis: { title: "OTU IDs" },
+    yaxis: { title: "Sample Values" },
+    showlegend: false,
+    height: 600, // Adjusted height
+    width: document.getElementById("bubble").clientWidth, // Responsive width
+    margin: { t: 50, r: 25, l: 25, b: 25 }, // Adjusted margins
+  };
+
+  // Plot the bubble chart
+  Plotly.newPlot("bubble", data, layout);
+}
+
+function createWeeklyWashingFrequencyGaugeChart(sample) {
+  // Increase the size of the needle
+  const needleSize = 35; // Increase this value to make the needle larger
+
+  // Calculate angle for each segment in the gauge
+  const colors = [
+    "#f7fcf5",
+    "#e5f5e0",
+    "#c7e9c0",
+    "#a1d99b",
+    "#74c476",
+    "#41ab5d",
+    "#238b45",
+    "#006d2c",
+    "#00441b",
+  ];
+
+  // Create the gauge part
+  const gaugeData = {
+    type: "pie",
+    showlegend: false,
+    hole: 0.5,
+    rotation: 90,
+    values: [50, 50, 50, 50, 50, 50, 50, 50, 50, 450],
+    text: ["0-1", "1-2", "2-3", "3-4", "4-5", "5-6", "6-7", "7-8", "8-9", ""],
+    direction: "clockwise",
+    textinfo: "text",
+    textposition: "inside",
+    marker: {
+      colors: [...colors, "rgba(255, 255, 255, 0)"], // Last color is for the center
+      labels: [
+        "0-1",
+        "1-2",
+        "2-3",
+        "3-4",
+        "4-5",
+        "5-6",
+        "6-7",
+        "7-8",
+        "8-9",
+        "",
+      ],
+      hoverinfo: "label",
+    },
+    hoverinfo: "skip",
+  };
+
+  // Create the needle based on the gauge value
+  // The angle should be subtracted from 180 to flip the direction
+  const degrees = 180 - sample.wfreq * 20;
+  const radius = 0.5;
+  const radians = (degrees * Math.PI) / 180;
+  const x = radius * Math.cos(radians); // Flip the direction of the needle
+  const y = radius * Math.sin(radians);
+
+  // Path for the needle shape
+  const mainPath = "M .0 -0.025 L .0 0.025 L ",
+    pathX = String(x),
+    space = " ",
+    pathY = String(y),
+    pathEnd = " Z";
+  const path = mainPath.concat(pathX, space, pathY, pathEnd);
+  const needle = {
+    type: "scatter",
+    x: [0],
+    y: [0],
+    marker: { size: needleSize, color: "850000" },
+    showlegend: false,
+    name: "frequency",
+    text: sample.wfreq,
+    hoverinfo: "text+name",
+    mode: "markers+text",
+    textposition: "bottom center",
+  };
+
+  // Define the layout for the gauge chart
+  const layout = {
+    shapes: [
+      {
+        type: "path",
+        path: path,
+        fillcolor: "850000",
+        line: {
+          color: "850000",
+        },
+      },
+    ],
+    title: {
+      text: "<b>Belly Button Washing Frequency</b><br>Scrubs per Week",
+      y: 0.85,
+      x: 0.5,
+    },
+    height: 400,
+    width: document.getElementById("gauge").clientWidth, // Responsive width
+    xaxis: {
+      zeroline: false,
+      showticklabels: false,
+      showgrid: false,
+      range: [-1, 1],
+    },
+    yaxis: {
+      zeroline: false,
+      showticklabels: false,
+      showgrid: false,
+      range: [-1, 1],
+    },
+    autosize: false,
+    margin: { t: 100, r: 25, l: 25, b: 25 }, // Adjusted margins
+  };
+
+  // Combine gauge data and needle data for the Plotly plot
+  const data = [gaugeData, needle];
+
+  // Render the gauge chart
+  Plotly.newPlot("gauge", data, layout);
+}
 
 // E) Deploy your app to a free static page hosting service, such as GitHub Pages.
 
