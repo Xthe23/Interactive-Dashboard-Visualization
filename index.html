@@ -4,46 +4,79 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>Bellybutton Biodiversity</title>
+    <title>Bellybutton Biodiversity Dashboard</title>
     <link
       rel="stylesheet"
       href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
     />
+    <style>
+      body {
+        padding-top: 20px;
+      }
+      #title-container {
+        background-color: lightgrey;
+        padding: 20px 0;
+        margin-bottom: 30px;
+      }
+      .chart-card {
+        background-color: #fff;
+        border-radius: 5px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+        padding: 15px;
+      }
+      .chart-header {
+        margin-bottom: 15px;
+        text-align: center;
+      }
+    </style>
   </head>
-
   <body>
     <div class="container">
-      <div class="row">
-        <div class="col-md-12 text-left">
+      <div class="row" id="title-container">
+        <div class="col-md-12 text-center">
           <h1><strong>Belly Button Biodiversity Dashboard</strong></h1>
           <h3>Use the interactive charts below to explore the dataset</h3>
         </div>
       </div>
       <div class="row">
-        <div class="col-md-2">
-          <div>
+        <div class="col-md-3">
+          <div class="well">
             <h4>Test Subject ID No.:</h4>
             <select
               id="selDataset"
               onchange="optionChanged(this.value)"
               class="form-control"
             ></select>
-          </div>
-          <div class="well">
             <h3 class="well-title">Demographic Info</h3>
             <div id="sample-metadata" class="well-body"></div>
           </div>
         </div>
-        <div class="col-md-5">
-          <div id="bar"></div>
+        <div class="col-md-4">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h4>Top 10 OTUs</h4>
+            </div>
+            <div id="bar"></div>
+          </div>
         </div>
         <div class="col-md-5">
-          <div id="gauge"></div>
+          <div class="chart-card">
+            <div class="chart-header">
+              <h4>Belly Button Washing Frequency</h4>
+            </div>
+            <div id="gauge"></div>
+          </div>
         </div>
       </div>
       <div class="row">
         <div class="col-md-12">
-          <div id="bubble"></div>
+          <div class="chart-card">
+            <div class="chart-header">
+              <h4>Sample Distribution</h4>
+            </div>
+            <div id="bubble"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -51,6 +84,5 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="./static/js/app.js"></script>
-    <!-- <script src="./static/js/bonus.js"></script> -->
   </body>
 </html>
